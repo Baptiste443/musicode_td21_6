@@ -4,21 +4,21 @@
 <p class="subtitle">Découvrez les morceaux disponibles et ajoutez-les à votre bibliothèque.</p>
 
 <div class="grid-container">
-    <?php if (empty($musics)): ?>
+    <?php if (empty($musiques)): ?>
         <p>Aucune musique disponible.</p>
     <?php else: ?>
-        <?php foreach($musics as $music): ?>
+        <?php foreach ($musiques as $musique): ?>
             <div class="card">
-                <h3><?= htmlspecialchars($music['title']) ?></h3>
+                <h3><?= htmlspecialchars($musique['titre']) ?></h3>
                 <div class="card-info">
-                    <?= htmlspecialchars($music['artist']) ?> • <?= htmlspecialchars($music['album'] ?? '') ?><br>
-                    Durée : <?= htmlspecialchars($music['duration']) ?>
+                    <?= htmlspecialchars($musique['auteur']) ?> • <?= htmlspecialchars($musique['album'] ?? '') ?><br>
+                    Durée : <?= htmlspecialchars($musique['duree']) ?>
                 </div>
                 <div class="card-actions">
-                    <a href="/musics/<?= $music['id'] ?>" class="link-blue">Voir la fiche</a>
-                    <?php if(isset($_SESSION['user'])): ?>
-                        <form action="/library/add" method="POST">
-                            <input type="hidden" name="music_id" value="<?= $music['id'] ?>">
+                    <a href="index.php?page=musics/<?= $musique['id_mu'] ?>" class="link-blue">Voir la fiche</a>
+                    <?php if (isset($_SESSION['user_email'])): ?>
+                        <form action="index.php?page=library" method="POST">
+                            <input type="hidden" name="add_music_id" value="<?= $musique['id_mu'] ?>">
                             <button type="submit" class="btn btn-primary btn-small">Ajouter</button>
                         </form>
                     <?php else: ?>

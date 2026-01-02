@@ -1,37 +1,18 @@
 <?php
-require_once __DIR__ . '/../vendor/autoload.php'; // Pour charger le .env
+require_once __DIR__ . '/../vendor/autoload.php';
 
-function get_pdo() {
-    // Charge les variables du .env (nécessite composer)
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-    $dotenv->load();
-    
-    try {
-        $pdo = new PDO(
-            "mysql:host=" . $_ENV['DB_HOST'] . ";dbname=" . $_ENV['DB_NAME'] . ";charset=utf8",
-            $_ENV['DB_USER'],
-            $_ENV['DB_PASSWORD']
-        );
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $pdo;
-    } catch(Exception $e) {
-        die("Erreur de connexion BDD : " . $e->getMessage());
-    }
-}
-
-
-function get_bdd(){
-    // Chargement du .env
+function get_bdd()
+{
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
     $dotenv->load();
 
-    $host = $_ENV['DB_HOST'];
-    $db   = $_ENV['DB_NAME'];
-    $user = $_ENV['DB_USER'];
-    $pass = $_ENV['DB_PASSWORD'];
+    $hote = $_ENV['DB_HOST'];
+    $base = $_ENV['DB_NAME'];
+    $utilisateur = $_ENV['DB_USER'];
+    $mdp = $_ENV['DB_PASSWORD'];
 
     try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
+        $pdo = new PDO("mysql:host=$hote;dbname=$base;charset=utf8", $utilisateur, $mdp);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         return $pdo;
@@ -40,85 +21,101 @@ function get_bdd(){
     }
 }
 
-// --- MUSIQUES ---
-function get_all_musics() {
+// --- MUSIQUES (Table: musique) ---
+function get_all_musics()
+{
     $bdd = get_bdd();
-    $stmt = $bdd->query("SELECT * FROM musics");
-    return $stmt->fetchAll();
+    // Table: musique, Cols: id_mu, titre, auteur, duree, album
+    $req = $bdd->query("SELECT * FROM musique");
+    return $req->fetchAll();
 }
 
-function get_music_by_id($id) {
+function get_music_by_id($id)
+{
     $bdd = get_bdd();
-    $stmt = $bdd->prepare("SELECT * FROM musics WHERE id = ?");
-    $stmt->execute([$id]);
-    return $stmt->fetch();
+    $req = $bdd->prepare("SELECT * FROM musique WHERE id_mu = ?");
+    $req->execute([$id]);
+    return $req->fetch();
 }
 
-function add_music_to_catalog($title, $artist, $album, $duration) {
+function add_music_to_catalog($titre, $auteur, $album, $duree)
+{
     $bdd = get_bdd();
-    $stmt = $bdd->prepare("INSERT INTO musics (title, artist, album, duration) VALUES (?, ?, ?, ?)");
-    return $stmt->execute([$title, $artist, $album, $duration]);
+    $req = $bdd->prepare("INSERT INTO musique (titre, auteur, album, duree) VALUES (?, ?, ?, ?)");
+    return $req->execute([$titre, $auteur, $album, $duree]);
 }
 
-// --- UTILISATEURS ---
-function create_user($name, $email, $password) {
+// --- UTILISATEURS (Table: utilisateur) ---
+function create_user($nom_affichage, $email, $mdp)
+{
     $bdd = get_bdd();
-    $hash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $bdd->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-    return $stmt->execute([$name, $email, $hash]);
+    $mdp_hache = password_hash($mdp, PASSWORD_DEFAULT);
+    // Table: utilisateur, Cols: email (PK), nom_affichage, mdp
+    $req = $bdd->prepare("INSERT INTO utilisateur (nom_affichage, email, mdp) VALUES (?, ?, ?)");
+    return $req->execute([$nom_affichage, $email, $mdp_hache]);
 }
 
-function get_user_by_email($email) {
+function get_user_by_email($email)
+{
     $bdd = get_bdd();
-    $stmt = $bdd->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    return $stmt->fetch();
+    $req = $bdd->prepare("SELECT * FROM utilisateur WHERE email = ?");
+    $req->execute([$email]);
+    return $req->fetch();
 }
 
-function update_user_profile($id, $name, $password = null) {
+function update_user_profile($email, $nom_affichage, $mdp = null)
+{
     $bdd = get_bdd();
-    if ($password) {
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $bdd->prepare("UPDATE users SET name = ?, password = ? WHERE id = ?");
-        return $stmt->execute([$name, $hash, $id]);
+    if ($mdp) {
+        $mdp_hache = password_hash($mdp, PASSWORD_DEFAULT);
+        // Update both name and password
+        $req = $bdd->prepare("UPDATE utilisateur SET nom_affichage = ?, mdp = ? WHERE email = ?");
+        return $req->execute([$nom_affichage, $mdp_hache, $email]);
     } else {
-        $stmt = $bdd->prepare("UPDATE users SET name = ? WHERE id = ?");
-        return $stmt->execute([$name, $id]);
+        // Update only name
+        $req = $bdd->prepare("UPDATE utilisateur SET nom_affichage = ? WHERE email = ?");
+        return $req->execute([$nom_affichage, $email]);
     }
 }
 
-// --- BIBLIOTHÈQUE ---
-function get_user_library($user_id) {
+// --- BIBLIOTHÈQUE (Table: ListePerso) ---
+function get_user_library($user_email)
+{
     $bdd = get_bdd();
-    // Jointure pour récupérer les infos de la musique + la note de l'utilisateur
-    $sql = "SELECT m.*, l.rating 
-            FROM musics m 
-            JOIN library l ON m.id = l.music_id 
-            WHERE l.user_id = ?";
-    $stmt = $bdd->prepare($sql);
-    $stmt->execute([$user_id]);
-    return $stmt->fetchAll();
+    // Table: ListePerso, Cols: id_li, note, id_mu, email
+    // Join with musique on id_mu
+    $requete = "SELECT m.*, l.note, l.id_li
+            FROM musique m 
+            JOIN ListePerso l ON m.id_mu = l.id_mu 
+            WHERE l.email = ?";
+    $req = $bdd->prepare($requete);
+    $req->execute([$user_email]);
+    return $req->fetchAll();
 }
 
-function add_music_to_library($user_id, $music_id) {
+function add_music_to_library($user_email, $id_mu)
+{
     $bdd = get_bdd();
-    // On vérifie d'abord si elle n'y est pas déjà
-    $check = $bdd->prepare("SELECT * FROM library WHERE user_id = ? AND music_id = ?");
-    $check->execute([$user_id, $music_id]);
-    if ($check->fetch()) return false;
+    // Check duplication
+    $verif = $bdd->prepare("SELECT * FROM ListePerso WHERE email = ? AND id_mu = ?");
+    $verif->execute([$user_email, $id_mu]);
+    if ($verif->fetch())
+        return false;
 
-    $stmt = $bdd->prepare("INSERT INTO library (user_id, music_id, rating) VALUES (?, ?, 0)");
-    return $stmt->execute([$user_id, $music_id]);
+    $req = $bdd->prepare("INSERT INTO ListePerso (email, id_mu, note) VALUES (?, ?, 0)");
+    return $req->execute([$user_email, $id_mu]);
 }
 
-function update_rating($user_id, $music_id, $rating) {
+function update_rating($user_email, $id_mu, $note)
+{
     $bdd = get_bdd();
-    $stmt = $bdd->prepare("UPDATE library SET rating = ? WHERE user_id = ? AND music_id = ?");
-    return $stmt->execute([$rating, $user_id, $music_id]);
+    $req = $bdd->prepare("UPDATE ListePerso SET note = ? WHERE email = ? AND id_mu = ?");
+    return $req->execute([$note, $user_email, $id_mu]);
 }
 
-function remove_from_library($user_id, $music_id) {
+function remove_from_library($user_email, $id_mu)
+{
     $bdd = get_bdd();
-    $stmt = $bdd->prepare("DELETE FROM library WHERE user_id = ? AND music_id = ?");
-    return $stmt->execute([$user_id, $music_id]);
+    $req = $bdd->prepare("DELETE FROM ListePerso WHERE email = ? AND id_mu = ?");
+    return $req->execute([$user_email, $id_mu]);
 }
