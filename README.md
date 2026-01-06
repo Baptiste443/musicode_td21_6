@@ -31,15 +31,10 @@ Ce projet est une application web PHP permettant aux utilisateurs de consulter u
     -   À la racine du projet,  creer le fichier `.env` et configurez les informations de connexion à votre base de données :
         "env
         DB_HOST=localhost
-        DB_NAME=nom_de_votre_base_de_donnees
+        DB_NAME=musicode
         DB_USER=root
         DB_PASSWORD=
         "
-
-## Utilisation
-
-Accédez au projet via votre navigateur en utilisant l'URL appropriée (selon votre configuration serveur), par exemple :
-`http://localhost/Musicode/musicode_td21_6/index.php`
 
 ## Structure du Projet
 
