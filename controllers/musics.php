@@ -3,7 +3,6 @@
 $url_parties = explode('/', $page);
 $action = $url_parties[1] ?? null;
 
-// Handle Add Music (only if logged in)
 if ($action === 'add') {
     if (!isset($_SESSION['user_email'])) {
         header('Location: index.php?page=login');
@@ -26,7 +25,7 @@ if ($action === 'add') {
     }
     require 'views/music_add.php';
 }
-// Handle Details
+
 elseif (is_numeric($action)) {
     $musique = get_music_by_id($action);
     if (!$musique) {
@@ -35,7 +34,7 @@ elseif (is_numeric($action)) {
         require 'views/musics_details.php';
     }
 }
-// Handle List
+
 else {
     $musiques = get_all_musics();
     require 'views/musics.php';
